@@ -4,3 +4,4 @@ target/
 out/
 /com/nic/mercedes/init/PrivateTokens.kt
 .DS_Store
+/src/main/java/com/nic/mercedes/init/PrivateTokens.kt

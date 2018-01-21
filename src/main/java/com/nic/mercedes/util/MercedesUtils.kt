@@ -2,7 +2,7 @@ package com.nic.mercedes.util
 
 import de.btobastian.javacord.entities.Server
 import de.btobastian.javacord.entities.User
-import de.btobastian.javacord.entities.channels.ServerTextChannel
+import de.btobastian.javacord.entities.channels.TextChannel
 import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.entities.permissions.PermissionType
@@ -33,4 +33,4 @@ fun User.getRpName(server: Server) : String{
     else this.name
 }
 
-inline fun ServerTextChannel.sendEmbedMessage(color: Color, content: String = "", func: EmbedBuilder.() -> Unit): Message = this.sendMessage(content, EmbedBuilder().setColor(color).apply(func)).get()
+inline fun TextChannel.sendEmbedMessage(color: Color, content: String = "", func: EmbedBuilder.() -> Unit): Message = this.sendMessage(content, EmbedBuilder().setColor(color).apply(func)).get()
