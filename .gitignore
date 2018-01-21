@@ -1,0 +1,6 @@
+.idea/
+src/test/
+target/
+out/
+/com/nic/mercedes/init/PrivateTokens.kt
+.DS_Store
