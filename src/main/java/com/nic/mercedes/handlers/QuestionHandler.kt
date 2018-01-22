@@ -1,5 +1,6 @@
 package com.nic.mercedes.handlers
 
+import com.nic.mercedes.games.Roulette
 import com.nic.mercedes.init.Mercedes
 import com.nic.mercedes.util.getRpName
 import com.nic.mercedes.util.sendEmbedMessage
@@ -8,8 +9,10 @@ import de.btobastian.javacord.entities.User
 import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.Reaction
 import de.btobastian.javacord.events.message.MessageCreateEvent
+import de.btobastian.javacord.events.message.MessageDeleteEvent
 import de.btobastian.javacord.events.message.reaction.ReactionAddEvent
 import de.btobastian.javacord.listeners.message.MessageCreateListener
+import de.btobastian.javacord.listeners.message.MessageDeleteListener
 import de.btobastian.javacord.listeners.message.reaction.ReactionAddListener
 import java.awt.Color
 import java.text.NumberFormat
@@ -19,7 +22,7 @@ import java.util.*
 /**
  * Created by Nictogen on 1/20/18
  */
-object QuestionHandler : ReactionAddListener, MessageCreateListener {
+object QuestionHandler : ReactionAddListener, MessageCreateListener, MessageDeleteListener {
 
     override fun onMessageCreate(event: MessageCreateEvent) {
         questionList.filter { event.message.userAuthor.get() == it.user }.forEach {
@@ -31,6 +34,10 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener {
         questionList.filter { event.user == it.user && it.messageID == event.message.get().id }.forEach {
             it.onReaction(event.channel.asServerTextChannel().get().server, event.user, event.reaction.get())
         }
+    }
+
+    override fun onMessageDelete(event: MessageDeleteEvent) {
+        questionList.removeAll(questionList.filter { event.messageId == it.messageID })
     }
 
     val questionList = ArrayList<Question>()
@@ -51,6 +58,9 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener {
         addField("\uD83D\uDCB0", "Gain Income", true)
         addField("\uD83D\uDCEC", "Send to other", true)
         addField("⚙", "Adjust Settings", true)
+        if(originalMessage.channel.asServerTextChannel().get().name.contains("roulette")){
+            addField("\uD83C\uDFB2", "Play a Game", true)
+        }
     }) : Question(message, user, message.id) {
 
         init {
@@ -58,6 +68,9 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener {
             message.addReaction("\uD83D\uDCB0")
             message.addReaction("\uD83D\uDCEC")
             message.addReaction("⚙")
+            if(originalMessage.channel.asServerTextChannel().get().name.contains("roulette")){
+                message.addReaction("\uD83C\uDFB2")
+            }
         }
 
         override fun onMessage(server: Server, user: User, message: Message) {}
@@ -84,6 +97,10 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener {
                     }
                     "⚙" -> {
                         Settings(reaction.message, user)
+                        reaction.message.delete()
+                    }
+                    "\uD83C\uDFB2" -> {
+                        Games(reaction.message, user)
                         reaction.message.delete()
                     }
                 }
@@ -154,7 +171,7 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener {
         }
     }
 
-    class Send(private var originalMessage: Message, user: User, message: Message = originalMessage.channel.sendEmbedMessage(Color.YELLOW, "") {
+    class Send(private var originalMessage: Message, user: User, var message: Message = originalMessage.channel.sendEmbedMessage(Color.YELLOW, "") {
         val d = DataHandler.getData(originalMessage.channel.asServerTextChannel().get().server, user).amount
         setDescription("Your balance is ${NumberFormat.getNumberInstance(Locale.US).format(d)}, ${user.getRpName(originalMessage.channel.asServerTextChannel().get().server)}. \nSend to another player with format: `@Mercedes the Money Bot#8859 <player> <amount>`")
         addField("⏩", "Cancel", true)
@@ -178,9 +195,11 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener {
                         Balance(message, user)
                         Balance(message, player)
                         message.delete()
+                        this.message.delete()
                     } else {
                         NotEnough(message, user)
                         message.delete()
+                        this.message.delete()
                     }
                 }
             } catch (e: Exception) {
@@ -230,6 +249,30 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener {
         override fun onReaction(server: Server, user: User, reaction: Reaction) {
             if (reaction.emoji.isUnicodeEmoji && reaction.emoji.asUnicodeEmoji().get() == "⏩") {
                 reaction.message.delete()
+            }
+        }
+
+    }
+
+    class Games(originalMessage: Message, user: User, message: Message = originalMessage.channel.sendEmbedMessage(Color.YELLOW, "") {
+        setDescription("Please select a game, ${user.getRpName(originalMessage.channel.asServerTextChannel().get().server)}.")
+        addField("\uD83D\uDD04", "Roulette", true)
+    }) : Question(message, user, message.id) {
+
+        init {
+            message.addReaction("\uD83D\uDD04")
+        }
+
+        override fun onMessage(server: Server, user: User, message: Message) {}
+
+        override fun onReaction(server: Server, user: User, reaction: Reaction) {
+            if (reaction.emoji.isUnicodeEmoji) {
+                when (reaction.emoji.asUnicodeEmoji().get()) {
+                    "\uD83D\uDD04" -> {
+                        Roulette(reaction.message, user)
+                        reaction.message.delete()
+                    }
+                }
             }
         }
 

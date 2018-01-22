@@ -67,6 +67,7 @@ class Main {
 
             Mercedes.api.addMessageCreateListener(QuestionHandler)
             Mercedes.api.addReactionAddListener(QuestionHandler)
+            Mercedes.api.addMessageDeleteListener(QuestionHandler)
 
             Mercedes.api.servers.forEach { DataHandler.loadData(it) }
         }
