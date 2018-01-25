@@ -79,7 +79,7 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener, MessageDele
             message.addReaction("\uD83D\uDCB0")
             message.addReaction("\uD83D\uDCEC")
             message.addReaction("⚙")
-            if(originalMessage.channel.asServerTextChannel().get().name.contains("roulette")){
+            if(originalMessage.channel.asServerTextChannel().get().category.isPresent && originalMessage.channel.asServerTextChannel().get().category.get().name.contains("$")){
                 message.addReaction("\uD83C\uDFB2")
             }
         }
@@ -273,6 +273,7 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener, MessageDele
 
         init {
             message.addReaction("\uD83D\uDD04")
+            message.addReaction("♠")
         }
 
         override fun onMessage(server: Server, user: User, message: Message) {}

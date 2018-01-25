@@ -187,10 +187,11 @@ class Blackjack(originalMessage: Message, var players: ArrayList<Player>, var me
                         }
                     }
                 }
+                val newPlayers = ArrayList<Player>()
                 this.players.forEach {
-                    it.cards.clear()
+                    newPlayers.add(Player(it.user, ArrayList(), 0, false))
                 }
-                Blackjack(this.message, this.players)
+                Blackjack(this.message, newPlayers)
                 this.message.delete()
             }
         }
@@ -209,12 +210,12 @@ class Blackjack(originalMessage: Message, var players: ArrayList<Player>, var me
         setDescription("What will you do, ${currentPlayer.user.getDisplayName(waiting.message.channel.asServerTextChannel().get().server)}?\n" +
                 "You have: ${cards}for a value of: ${getValue(currentPlayer.cards)}.")
         addField("Hit", "\uD83D\uDC46", true)
-        addField("Stand", "⏩️", true)
+        addField("Stand", "\uD83D\uDD90", true)
     }) : QuestionHandler.Question(message, currentPlayer.user, message.id) {
 
         init {
             message.addReaction("\uD83D\uDC46")
-            message.addReaction("⏩")
+            message.addReaction("\uD83D\uDD90")
         }
 
         override fun onMessage(server: Server, user: User, message: Message) {}
@@ -237,7 +238,7 @@ class Blackjack(originalMessage: Message, var players: ArrayList<Player>, var me
                         }
                         reaction.message.delete()
                     }
-                    "⏩" -> {
+                    "\uD83D\uDD90" -> {
                         //STAND
                         currentPlayer.done = true
                         reaction.message.delete()
