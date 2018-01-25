@@ -1,5 +1,6 @@
 package com.nic.mercedes.handlers
 
+import com.nic.mercedes.games.Blackjack
 import com.nic.mercedes.games.Roulette
 import com.nic.mercedes.init.Mercedes
 import com.nic.mercedes.util.getRpName
@@ -17,6 +18,7 @@ import de.btobastian.javacord.listeners.message.reaction.ReactionAddListener
 import java.awt.Color
 import java.text.NumberFormat
 import java.util.*
+import kotlin.collections.ArrayList
 
 
 /**
@@ -25,13 +27,14 @@ import java.util.*
 object QuestionHandler : ReactionAddListener, MessageCreateListener, MessageDeleteListener {
 
     override fun onMessageCreate(event: MessageCreateEvent) {
-        questionList.filter { event.message.userAuthor.get() == it.user }.forEach {
+        if(event.message.userAuthor.get().isBot && event.message.content.contains(Mercedes.api.yourself.id.toString())) event.message.delete()
+        questionList.filter { it.isValidMessager(event.message.userAuthor.get()) }.forEach {
             it.onMessage(event.channel.asServerTextChannel().get().server, event.message.userAuthor.get(), event.message)
         }
     }
 
     override fun onReactionAdd(event: ReactionAddEvent) {
-        questionList.filter { event.user == it.user && it.messageID == event.message.get().id }.forEach {
+        questionList.filter { !event.user.isBot && it.isValidReactor(event.user) && it.messageID == event.message.get().id }.forEach {
             it.onReaction(event.channel.asServerTextChannel().get().server, event.user, event.reaction.get())
         }
     }
@@ -50,6 +53,14 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener, MessageDele
         abstract fun onReaction(server: Server, user: User, reaction: Reaction)
 
         abstract fun onMessage(server: Server, user: User, message: Message)
+
+        open fun isValidReactor(user: User) : Boolean {
+            return user == this.user
+        }
+
+        open fun isValidMessager(user: User) : Boolean {
+            return user == this.user
+        }
     }
 
     class Menu(originalMessage: Message, user: User, message: Message = originalMessage.channel.sendEmbedMessage(Color.YELLOW, "") {
@@ -58,7 +69,7 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener, MessageDele
         addField("\uD83D\uDCB0", "Gain Income", true)
         addField("\uD83D\uDCEC", "Send to other", true)
         addField("⚙", "Adjust Settings", true)
-        if(originalMessage.channel.asServerTextChannel().get().name.contains("roulette")){
+        if(originalMessage.channel.asServerTextChannel().get().category.isPresent && originalMessage.channel.asServerTextChannel().get().category.get().name.contains("$")){
             addField("\uD83C\uDFB2", "Play a Game", true)
         }
     }) : Question(message, user, message.id) {
@@ -184,11 +195,11 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener, MessageDele
         override fun onMessage(server: Server, user: User, message: Message) {
             try {
                 val args = message.content.split(" ")
-                if (args[0] == Mercedes.api.yourself.mentionTag && server.members.any { it.mentionTag == args[1] }) {
-                    val player = server.members.first { it.mentionTag == args[1] }
+                if (args[0] == Mercedes.api.yourself.mentionTag && server.members.any { args[1].contains("${it.id}") }) {
+                    val player = server.members.first { args[1].contains("${it.id}") }
                     val amount = args[2].toInt()
                     val d = DataHandler.getData(server, user).amount
-                    if (amount <= d) {
+                    if (amount in 1..d) {
                         DataHandler.getData(server, user).amount -= amount
                         DataHandler.getData(server, player).amount += amount
                         DataHandler.saveData(server)
@@ -197,7 +208,7 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener, MessageDele
                         message.delete()
                         this.message.delete()
                     } else {
-                        NotEnough(message, user)
+                        Notify(message, "You don't have that much, sorry!", user)
                         message.delete()
                         this.message.delete()
                     }
@@ -214,8 +225,8 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener, MessageDele
 
     }
 
-    class NotEnough(originalMessage: Message, user: User, message: Message = originalMessage.channel.sendEmbedMessage(Color.RED, "") {
-        setDescription("You don't have that much, sorry!")
+    class Notify(originalMessage: Message, var content : String, user: User, message: Message = originalMessage.channel.sendEmbedMessage(Color.RED, "") {
+        setDescription(content)
         addField("⏩", "Thank you", true)
     }) : Question(message, user, message.id) {
 
@@ -257,6 +268,7 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener, MessageDele
     class Games(originalMessage: Message, user: User, message: Message = originalMessage.channel.sendEmbedMessage(Color.YELLOW, "") {
         setDescription("Please select a game, ${user.getRpName(originalMessage.channel.asServerTextChannel().get().server)}.")
         addField("\uD83D\uDD04", "Roulette", true)
+        addField("♠️", "Blackjack", true)
     }) : Question(message, user, message.id) {
 
         init {
@@ -270,6 +282,12 @@ object QuestionHandler : ReactionAddListener, MessageCreateListener, MessageDele
                 when (reaction.emoji.asUnicodeEmoji().get()) {
                     "\uD83D\uDD04" -> {
                         Roulette(reaction.message, user)
+                        reaction.message.delete()
+                    }
+                    "♠" -> {
+                        val players = ArrayList<Blackjack.Player>()
+                        players.add(Blackjack.Player(user, ArrayList(), 0, false))
+                        Blackjack(reaction.message, players)
                         reaction.message.delete()
                     }
                 }

@@ -19,6 +19,7 @@ class Roulette(originalMessage: Message, user: User, var message: Message = orig
     setDescription("Place your bet. Options:")
     addField("Red/Black/Odd/Even/High/Low", "`@Mercedes the Money Bot#8859 bet <type> <amount>`", true)
     addField("Single Number", "`@Mercedes the Money Bot#8859 bet <number> <amount>`", true)
+    addField("Quit", "\uD83D\uDEAB", true)
 }) : QuestionHandler.Question(message, user, message.id) {
 
     override fun onMessage(server: Server, user: User, message: Message) {
@@ -26,7 +27,7 @@ class Roulette(originalMessage: Message, user: User, var message: Message = orig
             val args = message.content.split(" ")
             if (args[0] == Mercedes.api.yourself.mentionTag && args[1] == "bet") {
                 val bet = args[3].toInt()
-                if (DataHandler.getData(message.channel.asServerTextChannel().get().server, user).amount >= bet) {
+                if (bet > 0 && DataHandler.getData(message.channel.asServerTextChannel().get().server, user).amount >= bet) {
                     val number = Random().nextInt(37)
                     val odd = if (number == 0) false else number % 2 != 0
                     val even = if (number == 0) false else !odd
@@ -68,16 +69,24 @@ class Roulette(originalMessage: Message, user: User, var message: Message = orig
                         }
                     }
                     Result(betString, result, amount, message, user)
+                    Roulette(this.message, user)
                     this.message.delete()
                     message.delete()
-                }
-            } else {
-                QuestionHandler.NotEnough(message, user)
+                } else QuestionHandler.Notify(message, "You don't have that much, sorry!", user)
+
             }
         } catch (e: Exception) { }
     }
 
-    override fun onReaction(server: Server, user: User, reaction: Reaction) {}
+    override fun onReaction(server: Server, user: User, reaction: Reaction) {
+        if (reaction.emoji.isUnicodeEmoji) {
+            when (reaction.emoji.asUnicodeEmoji().get()) {
+                "\uD83D\uDEAB" -> {
+                    this.message.delete()
+                }
+            }
+        }
+    }
 
     class Result(bet : String, result: String, amount : Int, originalMessage: Message, user: User, message: Message = originalMessage.channel.sendEmbedMessage(if(amount > 0) Color.GREEN else Color.RED, "") {
         setDescription(bet + "\n\nThe ball landed on.... $result!\n\n" + if(amount > 0) "You won $amount points!" else "You lost ${amount*-1} points, sorry.")
