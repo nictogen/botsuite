@@ -1,7 +1,4 @@
 .idea/
-src/test/
 target/
 out/
-/com/nic/mercedes/init/PrivateTokens.kt
-.DS_Store
-/src/main/java/com/nic/mercedes/init/PrivateTokens.kt
+src/main/java/com/nic/botsuite/common/init/PrivateTokens.kt
